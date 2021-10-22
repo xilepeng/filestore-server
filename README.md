@@ -30,9 +30,13 @@ sudo git lfs install --system
 ```
 
 ```go
+git lfs track "*.mp3"
+
 git lfs track "*.pdf"
 ```
 
 ```go
 git add .gitattributes
 ```
+
+
