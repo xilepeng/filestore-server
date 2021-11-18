@@ -58,9 +58,53 @@ main                    Running           192.168.105.9    Ubuntu 20.04 LTS
 ubuntu@main:~$ sudo snap install docker
 docker 20.10.8 from Canonical✓ installed
 
-
+ubuntu@main:~$ sudo snap install go --classic
+go 1.17.3 from Michael Hudson-Doyle (mwhudson) installed
 
 
 http://192.168.105.9:8080/file/upload
+
+
+
+ubuntu@main:/tmp$ sha1sum /tmp/noface.png
+e87999a1ac4defe6f25153d2dd41091fdd89c884  /tmp/noface.png
+
+
+
+
+http://192.168.105.9:8080/file/meta/?filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884
+
+{
+    "FileSha1": "e87999a1ac4defe6f25153d2dd41091fdd89c884",
+    "FileName": "noface.png",
+    "FileSize": 582157,
+    "Location": "/tmp/noface.png",
+    "UploadAt": "2021-11-18 15:52:41"
+}
+
+
+
+
+ubuntu@main:/tmp$ sha1sum /tmp/01.png
+e87999a1ac4defe6f25153d2dd41091fdd89c884  /tmp/01.png
+
+http://192.168.105.9:8080/file/meta/?filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884
+
+http://192.168.105.9:8080/file/download?filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884
+
+
+POST 
+http://192.168.105.9:8080/file/update?op=0&filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884&filename=111.png
+
+{
+    "FileSha1": "e87999a1ac4defe6f25153d2dd41091fdd89c884",
+    "FileName": "111.png",
+    "FileSize": 582157,
+    "Location": "/tmp/01.png",
+    "UploadAt": "2021-11-18 17:57:31"
+}
+
+POST
+http://192.168.105.9:8080/file/delete?filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884
 
 ```
