@@ -128,27 +128,123 @@ http://192.168.105.9:8080/file/delete?filehash=e87999a1ac4defe6f25153d2dd41091fd
 # V2.0
 
 
+
+```
+docker volume create portainer_data
+
+docker run -d -p 8000:8000 -p 9443:9443 --name portainer \
+    --restart=always \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v portainer_data:/data \
+    portainer/portainer-ce:latest
+
+
+https://192.168.105.9:9443
+```
+
+
+
 ## mysql 环境配置
 
 ```sql
-ubuntu@main:~$ sudo docker pull mysql:latest
+ubuntu@main:~$ sudo docker pull mysql
 
-ubuntu@main:~$ sudo docker run -itd --name master -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+sudo docker run -itd --name master -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
 
-ubuntu@main:~$ sudo docker run -itd --name slave -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
-
-
-ubuntu@main:~$ sudo docker ps
-CONTAINER ID   IMAGE     COMMAND                  CREATED              STATUS              PORTS                                                  NAMES
-fc0df1f056eb   mysql     "docker-entrypoint.s…"   37 seconds ago       Up 35 seconds       33060/tcp, 0.0.0.0:3307->3306/tcp, :::3307->3306/tcp   slave
-24ea9465c249   mysql     "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp   master
+sudo docker run -itd --name slave -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
 
 
-ubuntu@main:~$ sudo netstat -antup | grep docker
-tcp        0      0 0.0.0.0:3306            0.0.0.0:*               LISTEN      13031/docker-proxy
-tcp        0      0 0.0.0.0:3307            0.0.0.0:*               LISTEN      13291/docker-proxy
-tcp6       0      0 :::3306                 :::*                    LISTEN      13037/docker-proxy
-tcp6       0      0 :::3307                 :::*                    LISTEN      13296/docker-proxy
+配置Master
+
+使用如下命令进入到Master容器内部，使用容器ID或者名称均可：
+
+ubuntu@main:~$ sudo docker exec -it master /bin/bash
+root@87dc3b1876ac:/# cd /etc/mysql
+root@87dc3b1876ac:/etc/mysql# apt-get update && apt-get install vim -y
+
+root@87dc3b1876ac:/etc/mysql# ls
+conf.d	my.cnf	my.cnf.fallback
+root@87dc3b1876ac:/etc/mysql# vim my.cnf
+
+
+[mysqld]
+pid-file        = /var/run/mysqld/mysqld.pid
+socket          = /var/run/mysqld/mysqld.sock
+datadir         = /var/lib/mysql
+secure-file-priv= NULL
+# 添加
+server-id=100
+log-bin=master-bin
+binlog-format=ROW
+
+
+
+## 解释
+[mysqld]
+## 同一局域网内注意要唯一
+server-id=100  
+## 开启二进制日志功能，可以随便取（关键）
+log-bin=master-bin
+binlog-format=ROW     // 二级制日志格式，有三种 row，statement，mixed
+binlog-do-db=数据库名  //同步的数据库名称,如果不配置，表示同步所有的库
+
+
+
+root@87dc3b1876ac:/etc/mysql# exit
+exit
+ubuntu@main:~$ sudo docker restart master
+
+
+# 配置Slave
+
+
+
+
+
+
+ubuntu@main:~$ sudo docker exec -it slave /bin/bash
+
+root@e762b72982bc:/# apt-get update && apt-get install vim -y
+
+root@e762b72982bc:/# vim /etc/mysql/my.cnf
+
+[mysqld]
+pid-file        = /var/run/mysqld/mysqld.pid
+socket          = /var/run/mysqld/mysqld.sock
+datadir         = /var/lib/mysql
+secure-file-priv= NULL
+# 新增配置
+server-id=101
+log-bin=mysql-slave-bin
+relay_log=mysql-relay-bin
+read_only=1
+
+
+## 解释
+[mysqld]
+## 设置server_id,注意要唯一
+server-id=101  
+## 开启二进制日志功能，以备Slave作为其它Slave的Master时使用
+log-bin=mysql-slave-bin   
+## relay_log配置中继日志
+relay_log=mysql-relay-bin  
+read_only=1  ## 设置为只读,该项如果不设置，表示slave可读可写
+
+
+
+
+
+root@e762b72982bc:/# exit
+exit
+ubuntu@main:~$ sudo docker restart slave
+
+
+
+# 开启Master-Slave主从复制
+
+
+
+
 
 
 ubuntu@main:~$ sudo apt install mysql-client-core-8.0
@@ -160,13 +256,138 @@ ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3306 -p123456
 ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3307 -p123456
 
 
+## 3306 主
+
 mysql> show master status;
-+---------------+----------+--------------+------------------+-------------------+
-| File          | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
-+---------------+----------+--------------+------------------+-------------------+
-| binlog.000002 |      156 |              |                  |                   |
-+---------------+----------+--------------+------------------+-------------------+
-1 row in set (0.04 sec)
++-------------------+----------+--------------+------------------+-------------------+
+| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
++-------------------+----------+--------------+------------------+-------------------+
+| master-bin.000001 |      156 |              |                  |                   |
++-------------------+----------+--------------+------------------+-------------------+
+1 row in set (0.05 sec)
+
+
+
+
+ubuntu@main:~$ sudo docker inspect --format='{{.NetworkSettings.IPAddress}}' master
+172.17.0.3
+ubuntu@main:~$ sudo docker inspect --format='{{.NetworkSettings.IPAddress}}' slave
+172.17.0.4
+
+
+
+CHANGE MASTER TO
+  MASTER_HOST='172.17.0.3',
+  MASTER_USER='root',
+  MASTER_PASSWORD='123456',
+  MASTER_PORT=3306,
+  MASTER_LOG_FILE='master-bin.000001',
+  MASTER_LOG_POS=156;
+
+
+
+
+
+
+
+mysql> start slave;
+
+mysql> show slave status\G;
+*************************** 1. row ***************************
+               Slave_IO_State: Waiting for source to send event
+                  Master_Host: 172.17.0.3
+                  Master_User: root
+                  Master_Port: 3306
+                Connect_Retry: 60
+              Master_Log_File: master-bin.000001
+          Read_Master_Log_Pos: 156
+               Relay_Log_File: mysql-relay-bin.000002
+                Relay_Log_Pos: 325
+        Relay_Master_Log_File: master-bin.000001
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: Yes
+
+
+
+
+
+
+## 测试 主
+
+mysql> create database test1 default character set utf8;
+Query OK, 1 row affected, 1 warning (0.11 sec)
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| test1              |
++--------------------+
+5 rows in set (0.10 sec)
+
+## 测试 从
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| test1              |
++--------------------+
+5 rows in set (0.18 sec)
+
 
 
 ```
+
+
+
+## 1. 创建数据库和表结构
+
+```
+-- 创建数据库
+create database fileserver default character set utf8;
+
+-- 切换数据库
+use fileserver;
+
+-- 创建文件表
+CREATE TABLE `tbl_file` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `file_sha1` char(40) NOT NULL DEFAULT '' COMMENT '文件hash',
+  `file_name` varchar(256) NOT NULL DEFAULT '' COMMENT '文件名',
+  `file_size` bigint(20) DEFAULT '0' COMMENT '文件大小',
+  `file_addr` varchar(1024) NOT NULL DEFAULT '' COMMENT '文件存储位置',
+  `create_at` datetime default NOW() COMMENT '创建日期',
+  `update_at` datetime default NOW() on update current_timestamp() COMMENT '更新日期',
+  `status` int(11) NOT NULL DEFAULT '0' COMMENT '状态(可用/禁用/已删除等状态)',
+  `ext1` int(11) DEFAULT '0' COMMENT '备用字段1',
+  `ext2` text COMMENT '备用字段2',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_file_hash` (`file_sha1`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- 查看数据表
+show create table tbl_file\G;
+
+
+mysql> show tables;
++----------------------+
+| Tables_in_fileserver |
++----------------------+
+| tbl_file             |
++----------------------+
+1 row in set (0.07 sec)
+
+
+```
+
+
