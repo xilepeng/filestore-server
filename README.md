@@ -150,4 +150,13 @@ tcp        0      0 0.0.0.0:3307            0.0.0.0:*               LISTEN      
 tcp6       0      0 :::3306                 :::*                    LISTEN      13037/docker-proxy
 tcp6       0      0 :::3307                 :::*                    LISTEN      13296/docker-proxy
 
+
+ubuntu@main:~$ sudo apt install mysql-client-core-8.0
+
+
+ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3306 -p123456
+
+ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3307 -p123456
+
+
 ```
