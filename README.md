@@ -2,7 +2,7 @@
 
 
 
-
+# V1.0
 
 
 ## 环境配置
@@ -125,7 +125,7 @@ http://192.168.105.9:8080/file/delete?filehash=e87999a1ac4defe6f25153d2dd41091fd
 ```
 
 
-
+# V2.0
 
 
 ## mysql 环境配置
@@ -156,7 +156,17 @@ ubuntu@main:~$ sudo apt install mysql-client-core-8.0
 
 ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3306 -p123456
 
+
 ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3307 -p123456
+
+
+mysql> show master status;
++---------------+----------+--------------+------------------+-------------------+
+| File          | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
++---------------+----------+--------------+------------------+-------------------+
+| binlog.000002 |      156 |              |                  |                   |
++---------------+----------+--------------+------------------+-------------------+
+1 row in set (0.04 sec)
 
 
 ```
