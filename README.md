@@ -391,3 +391,24 @@ mysql> show tables;
 ```
 
 
+
+
+
+## golang的goproxy配置
+
+```go
+1.首先开启go module
+
+go env -w GO111MODULE=on           // macOS 或 Linux
+2.配置goproxy:
+
+
+七牛云配置：
+export GOPROXY=https://goproxy.cn         // macOS 或 Linux
+注意：
+
+Go 1.13设置了默认的GOSUMDB=sum.golang.org，是用来验证包的有效性。这个网址由于墙的原因可能无法访问，所以可以使用下面命令来关闭：
+
+export GOSUMDB=off // macOS 或 Linux
+
+```
