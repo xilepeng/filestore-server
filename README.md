@@ -462,6 +462,9 @@ main.go 添加
 	pwd, _ := os.Getwd()
 	fmt.Println(pwd + " " + os.Args[0])
 	http.Handle("/static/", http.FileServer(http.Dir(filepath.Join(pwd, "./"))))
+
+  // 用户相关接口
+	http.HandleFunc("/", handler.SignInHandler)
 ```
 
 
