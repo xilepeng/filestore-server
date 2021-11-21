@@ -2,7 +2,7 @@
 
 
 
-# V1.0
+# V1.0   云存储”系统原型(实现一个超精简版云盘)
 
 
 ## 环境配置
@@ -125,7 +125,7 @@ http://192.168.105.9:8080/file/delete?filehash=e87999a1ac4defe6f25153d2dd41091fd
 ```
 
 
-# V2.0
+# V2.0 “云存储”系统之基于MySQL实现的文件数据库(持久化云文件信息)
 
 
 
@@ -411,4 +411,66 @@ Go 1.13设置了默认的GOSUMDB=sum.golang.org，是用来验证包的有效性
 
 export GOSUMDB=off // macOS 或 Linux
 
+```
+
+
+
+```git 
+git switch -c v2.0
+
+git push origin HEAD:v2.0
+```
+
+
+
+# V3.0 “云存储”系统之基于用户系统实现的资源隔离及鉴权 (账号和应用收入息息相关)
+
+
+mysql用户表设计
+```sql
+-- 创建用户表
+CREATE TABLE `tbl_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(64) NOT NULL DEFAULT '' COMMENT '用户名',
+  `user_pwd` varchar(256) NOT NULL DEFAULT '' COMMENT '用户encoded密码',
+  `email` varchar(64) DEFAULT '' COMMENT '邮箱',
+  `phone` varchar(128) DEFAULT '' COMMENT '手机号',
+  `email_validated` tinyint(1) DEFAULT 0 COMMENT '邮箱是否已验证',
+  `phone_validated` tinyint(1) DEFAULT 0 COMMENT '手机号是否已验证',
+  `signup_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '注册日期',
+  `last_active` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后活跃时间戳',
+  `profile` text COMMENT '用户属性',
+  `status` int(11) NOT NULL DEFAULT '0' COMMENT '账户状态(启用/禁用/锁定/标记删除等)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_username` (`user_name`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+
+```
+
+
+## 404 page not found
+
+
+main.go 添加
+
+```go
+
+	// 静态资源处理
+	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	pwd, _ := os.Getwd()
+	fmt.Println(pwd + " " + os.Args[0])
+	http.Handle("/static/", http.FileServer(http.Dir(filepath.Join(pwd, "./"))))
+```
+
+
+修改 signin.html
+
+```js
+      success: function (body, textStatus, jqXHR) {
+        var resp = JSON.parse(body);
+        localStorage.setItem("token", resp.data.Token)
+        localStorage.setItem("username", resp.data.Username)
+        window.location.href = resp.data.Location;
+      }
 ```

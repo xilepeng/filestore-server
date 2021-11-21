@@ -34,6 +34,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		fileMeta := meta.FileMeta{
 			FileName: head.Filename,
 			Location: "/tmp/" + head.Filename,
+			// mac os
+			// Location: "/Users/x/tmp/" + head.Filename,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
