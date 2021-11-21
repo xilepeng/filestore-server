@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	mydb "github.com/xilepeng/LeidianNetdisk/db/mysql"
+	mydb "LeiliNetdisk/db/mysql"
 )
 
 // User : 用户表model

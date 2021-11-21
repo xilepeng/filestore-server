@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xilepeng/LeidianNetdisk/handler"
+	"LeiliNetdisk/handler"
 )
 
 func main() {

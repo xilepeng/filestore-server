@@ -1,7 +1,7 @@
 package meta
 
 import (
-	mydb "github.com/xilepeng/LeidianNetdisk/db"
+	mydb "LeiliNetdisk/db"
 )
 
 // FileMeta : 文件元信息结构

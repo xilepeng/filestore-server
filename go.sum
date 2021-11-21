@@ -1,2 +1,4 @@
 github.com/go-sql-driver/mysql v1.6.0 h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=
 github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
+github.com/xilepeng/LeidianNetdisk v0.0.0-20211121121058-a0856f7fcb91 h1:SITVORaGQ30DK085TrcJ8rHXcxrkp3lOR9Eo4XSy7Ss=
+github.com/xilepeng/LeidianNetdisk v0.0.0-20211121121058-a0856f7fcb91/go.mod h1:I4f25cxu8mg8BXXHRVZpujwzFTH/KmV3Ak4c9bqPNTg=

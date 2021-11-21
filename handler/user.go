@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	dblayer "github.com/xilepeng/LeidianNetdisk/db"
-	"github.com/xilepeng/LeidianNetdisk/util"
+	dblayer "LeiliNetdisk/db"
+	"LeiliNetdisk/util"
 )
 
 const (

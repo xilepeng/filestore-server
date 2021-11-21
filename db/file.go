@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	mydb "github.com/xilepeng/LeidianNetdisk/db/mysql"
+	mydb "LeiliNetdisk/db/mysql"
 )
 
 // OnFileUploadFinished:文件上传完成，保存meta

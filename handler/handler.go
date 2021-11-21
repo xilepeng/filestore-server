@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/xilepeng/LeidianNetdisk/meta"
-	"github.com/xilepeng/LeidianNetdisk/util"
+	"LeiliNetdisk/meta"
+	"LeiliNetdisk/util"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {

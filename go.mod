@@ -1,4 +1,4 @@
-module github.com/xilepeng/LeidianNetdisk
+module LeiliNetdisk
 
 go 1.17
 
