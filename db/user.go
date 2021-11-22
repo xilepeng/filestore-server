@@ -25,6 +25,7 @@ func UserSignup(username string, passwd string) bool {
 		return false
 	}
 	defer stmt.Close()
+
 	ret, err := stmt.Exec(username, passwd)
 	if err != nil {
 		fmt.Println("Failed to insert, err:" + err.Error())
@@ -53,6 +54,7 @@ func UserSignin(username string, encpwd string) bool {
 		fmt.Println("username not found: " + username)
 		return false
 	}
+
 	pRows := mydb.ParseRows(rows)
 	if len(pRows) > 0 && string(pRows[0]["user_pwd"].([]byte)) == encpwd {
 		return true
