@@ -490,6 +490,96 @@ git push origin HEAD:v3.0
 
 
 
+## V4.0 基于Hash计算实现秒传 （大幅提升拥有海量文件的云盘性能）
+
+
+```go
+handler/handler.go 实现：
+
+FileQueryHandler : 查询批量的文件元信息
+TryFastUploadHandler : 尝试秒传接口
+DownloadHandler : 文件下载接口
+
+
+db/userfile.go 实现：
+
+QueryUserFileMetas : 批量获取用户文件信息
+
+meta/filemeta.go 实现：
+
+GetLastFileMetas : 获取批量的文件元信息列表
+GetLastFileMetasDB : 批量从mysql获取文件元信息
 
 
 
+```
+
+
+
+
+```go
+
+# POST 请求
+
+http://192.168.105.9:8080/user/signin?username=admin&password=admin
+
+{"code":0,"msg":"OK","data":{"Location":"http://192.168.105.9:8080/static/view/home.html","Username":"admin","Token":"d5fbd378f2a64aa19ecc51204ec74831619c3fb5"}}
+
+# POST 请求
+
+http://192.168.105.9:8080/file/fastupload?username=admin&token=d5fbd378f2a64aa19ecc51204ec74831619c3fb5&filehash=e87999a1ac4defe6f25153d2dd41091fdd89c884&filename=mojo.png&filesize=582157
+
+
+{"code":0,"msg":"秒传成功","data":null}
+
+
+
+mysql> SHOW CREATE TABLE tbl_user_file;
+
+| tbl_user_file | CREATE TABLE `tbl_user_file` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_name` varchar(64) NOT NULL,
+  `file_sha1` varchar(64) NOT NULL DEFAULT '' COMMENT '??hash',
+  `file_size` bigint DEFAULT '0' COMMENT '????',
+  `file_name` varchar(256) NOT NULL DEFAULT '' COMMENT '???',
+  `upload_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '????',
+  `last_update` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '??????',
+  `status` int NOT NULL DEFAULT '0' COMMENT '????(0??1???2??)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_user_file` (`user_name`,`file_sha1`),
+  KEY `idx_status` (`status`),
+  KEY `idx_user_id` (`user_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+
+mysql> alter table tbl_user_file drop index `idx_user_file`;
+
+Query OK, 0 rows affected (0.06 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+
+
+
+mysql> SELECT * FROM tbl_user_file;
++----+-----------+------------------------------------------+-----------+---------------+---------------------+---------------------+--------+
+| id | user_name | file_sha1                                | file_size | file_name     | upload_at           | last_update         | status |
++----+-----------+------------------------------------------+-----------+---------------+---------------------+---------------------+--------+
+|  3 | admin     | e87999a1ac4defe6f25153d2dd41091fdd89c884 |    582157 | 02.png        | 2021-11-22 09:05:43 | 2021-11-22 09:05:42 |      0 |
+|  4 | admin     | 7ccc908cad1e9204a530c5cac8fc27d3211fc736 |    410735 | cv.pdf        | 2021-11-22 09:12:15 | 2021-11-22 09:12:14 |      0 |
+|  6 | admin     | 60b82b6e25de5e86c797f24e8bd57a8b350fbdcd |   2211509 |  LaTeX-cn.pdf | 2021-11-22 14:20:33 | 2021-11-22 14:20:32 |      1 |
+|  8 | admin     | e87999a1ac4defe6f25153d2dd41091fdd89c884 |    582157 | mojo.png      | 2021-11-23 01:35:41 | 2021-11-23 01:35:40 |      1 |
++----+-----------+------------------------------------------+-----------+---------------+---------------------+---------------------+--------+
+4 rows in set (0.00 sec)
+
+
+
+```
+
+
+
+
+```git 
+git switch -c v4.0
+
+git push origin HEAD:v4.0
+```
