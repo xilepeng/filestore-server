@@ -583,3 +583,74 @@ git switch -c v4.0
 
 git push origin HEAD:v4.0
 ```
+
+
+
+
+## V5.0 基于Redis实现分块上传及断点续传（可大幅提升传输速度）
+
+
+
+```go
+# redis
+
+version: '2'
+
+services:
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - data:/data
+    ports:
+      - 6379:6379
+      
+volumes:
+  data: {}
+
+
+ubuntu@main:~$ docker exec -it redis_redis_1 /bin/bash
+root@8d5040d0ee09:/data# redis-cli
+127.0.0.1:6379>
+
+1,查询默认密码
+127.0.0.1:6379>  config get requirepass
+1) "requirepass"
+2) ""
+
+2.修改密码
+127.0.0.1:6379> config set requirepass 123456
+OK
+
+3.查询修改后的密码
+127.0.0.1:6379> config get requirepass
+1) "requirepass"
+2) "123456"
+
+ 4.登录redis
+
+ redis-cli -p 6379 -a 123456
+
+
+
+ 127.0.0.1:6379> auth 123456
+OK
+127.0.0.1:6379> keys *
+(empty array)
+
+
+
+
+```
+
+
+
+
+
+
+
+```git 
+git switch -c v5.0
+
+git push origin HEAD:v5.0
+```
