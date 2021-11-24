@@ -10,9 +10,9 @@
 
 ```s
 
-➜  ~ multipass launch -n main -c 1 -m 4G -d 20G
+➜  ~ multipass launch -n x -c 1 -m 4G -d 40G
 Launched: main
-➜  ~ multipass shell main
+➜  ~ multipass shell x
 
 
 ubuntu@main:~$ sudo mv /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -61,16 +61,81 @@ main                    Running           192.168.105.9    Ubuntu 20.04 LTS
 ```
 
 
-```s
-ubuntu@main:~$ sudo snap install docker
-docker 20.10.8 from Canonical✓ installed
+## Ubuntu 安装 Docker
 
-ubuntu@main:~$ sudo snap install go --classic
-go 1.17.3 from Michael Hudson-Doyle (mwhudson) installed
+```go
+
+# 使用官方安装脚本自动安装
+ubuntu@master:~$ curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+
+ubuntu@master:~$ docker images
+Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/images/json": dial unix /var/run/docker.sock: connect: permission denied
+
+ubuntu@master:~$ sudo groupadd docker
+groupadd: group 'docker' already exists
+ubuntu@master:~$ sudo gpasswd -a ubuntu docker
+Adding user ubuntu to group docker
+ubuntu@master:~$ sudo service docker restart
+ubuntu@master:~$ sudo vim /etc/docker/daemon.json
+
+{ "registry-mirrors": [
+    "https://hkaofvr0.mirror.aliyuncs.com"
+  ]
+ }
+
+ubuntu@master:~$ sudo systemctl daemon-reload
+ubuntu@master:~$ sudo systemctl restart docker
+# 重启 iTerm2
+ubuntu@node1:~$ exit
+logout
+➜  ~ multipass shell node1
+
+ubuntu@master:~$ docker info
+
+ Registry Mirrors:
+  https://hkaofvr0.mirror.aliyuncs.com/
+
+# Install Compose on Linux systems
+
+sudo apt install docker-compose -y
+
+ubuntu@master:~$ sudo curl -L "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+ubuntu@master:~$ sudo chmod +x /usr/local/bin/docker-compose
+ubuntu@master:~$ sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+ubuntu@master:~$ docker-compose --version
+
+Docker Compose version v2.0.1
+
+
 
 
 ```
 
+```go
+ubuntu@main:~$ sudo snap install go --classic
+go 1.17.3 from Michael Hudson-Doyle (mwhudson) installed
+
+```
+
+## golang的goproxy配置
+
+```go
+1.首先开启go module
+
+go env -w GO111MODULE=on           // macOS 或 Linux
+2.配置goproxy:
+
+
+七牛云配置：
+export GOPROXY=https://goproxy.cn         // macOS 或 Linux
+注意：
+
+Go 1.13设置了默认的GOSUMDB=sum.golang.org，是用来验证包的有效性。这个网址由于墙的原因可能无法访问，所以可以使用下面命令来关闭：
+
+export GOSUMDB=off // macOS 或 Linux
+
+```
 
 
 ## 测试
@@ -141,25 +206,35 @@ docker run -d -p 8000:8000 -p 9443:9443 --name portainer \
 
 
 https://192.168.105.9:9443
+
+
+
+mac:
+
+localhost:9443
 ```
 
 
+# 查看服务器内存
+```go
+sudo apt install htop
+```
 
 ## mysql 环境配置
 
 ```sql
 ubuntu@main:~$ sudo docker pull mysql
 
-sudo docker run -itd --name master -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+docker run -itd --name master -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
 
-sudo docker run -itd --name slave -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+docker run -itd --name slave -p 3307:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
 
 
 配置Master
 
 使用如下命令进入到Master容器内部，使用容器ID或者名称均可：
 
-ubuntu@main:~$ sudo docker exec -it master /bin/bash
+ubuntu@main:~$ docker exec -it master /bin/bash
 root@87dc3b1876ac:/# cd /etc/mysql
 root@87dc3b1876ac:/etc/mysql# apt-get update && apt-get install vim -y
 
@@ -257,6 +332,10 @@ ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3306 -p123456
 ubuntu@main:~$ mysql -uroot -h127.0.0.1 -P3307 -p123456
 
 
+
+
+
+
 ## 3306 主
 
 mysql> show master status;
@@ -270,12 +349,18 @@ mysql> show master status;
 
 
 
+
 ubuntu@main:~$ sudo docker inspect --format='{{.NetworkSettings.IPAddress}}' master
 172.17.0.3
 ubuntu@main:~$ sudo docker inspect --format='{{.NetworkSettings.IPAddress}}' slave
 172.17.0.4
 
 
+
+
+
+
+## 3307 从
 
 CHANGE MASTER TO
   MASTER_HOST='172.17.0.3',
@@ -284,6 +369,7 @@ CHANGE MASTER TO
   MASTER_PORT=3306,
   MASTER_LOG_FILE='master-bin.000001',
   MASTER_LOG_POS=156;
+
 
 
 
@@ -395,24 +481,7 @@ mysql> show tables;
 
 
 
-## golang的goproxy配置
 
-```go
-1.首先开启go module
-
-go env -w GO111MODULE=on           // macOS 或 Linux
-2.配置goproxy:
-
-
-七牛云配置：
-export GOPROXY=https://goproxy.cn         // macOS 或 Linux
-注意：
-
-Go 1.13设置了默认的GOSUMDB=sum.golang.org，是用来验证包的有效性。这个网址由于墙的原因可能无法访问，所以可以使用下面命令来关闭：
-
-export GOSUMDB=off // macOS 或 Linux
-
-```
 
 
 
@@ -592,6 +661,21 @@ git push origin HEAD:v4.0
 
 
 ```go
+
+
+
+➜  ~ docker pull redis
+
+➜  ~ docker run -itd --name redis -p 6379:6379 redis
+
+➜  ~ docker exec -it redis /bin/bash
+
+root@03ac20e1c401:/data# redis-cli
+127.0.0.1:6379>
+
+
+
+
 # redis
 
 version: '2'
@@ -653,4 +737,112 @@ OK
 git switch -c v5.0
 
 git push origin HEAD:v5.0
+```
+
+
+
+## V6.0 基于Ceph实现私有云存储服务 (自主管理集群，技术可控)
+
+
+```go
+# 1. 创建Ceph专用网络
+docker network create --driver bridge --subnet 172.20.0.0/16 ceph-network
+docker network inspect ceph-network
+
+# 2. 删除旧的ceph相关容器
+docker rm -f $(docker ps -a | grep ceph | awk '{print $1}')
+
+# 3. 清理旧的ceph相关目录文件，加入有的话
+rm -rf /www/ceph /var/lib/ceph/  /www/osd/
+
+# 4. 创建相关目录及修改权限，用于挂载volume
+mkdir -p /www/ceph /var/lib/ceph/osd /www/osd/
+chown -R 64045:64045 /var/lib/ceph/osd/
+chown -R 64045:64045 /www/osd/
+
+
+
+# 5. 创建monitor节点
+
+
+
+docker run -itd --name monnode --network ceph-network --ip 172.20.0.10 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph ceph/mon
+
+# 6. 在monitor节点上标识3个osd节点
+docker exec monnode ceph osd create
+docker exec monnode ceph osd create
+docker exec monnode ceph osd create
+
+# 7. 创建OSD节点
+docker run -itd --name osdnode0 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/0:/var/lib/ceph/osd/ceph-0 ceph/osd 
+docker run -itd --name osdnode1 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/1:/var/lib/ceph/osd/ceph-1 ceph/osd
+docker run -itd --name osdnode2 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/2:/var/lib/ceph/osd/ceph-2 ceph/osd
+
+# 8. 增加monitor节点，组件成集群
+docker run -itd --name monnode_1 --network ceph-network --ip 172.20.0.11 -e MON_NAME=monnode_1 -e MON_IP=172.20.0.11 -v /www/ceph:/etc/ceph ceph/mon
+docker run -itd --name monnode_2 --network ceph-network --ip 172.20.0.12 -e MON_NAME=monnode_2 -e MON_IP=172.20.0.12 -v /www/ceph:/etc/ceph ceph/mon
+
+# 9. 创建gateway节点
+docker run -itd --name gwnode --network ceph-network --ip 172.20.0.9 -p 9080:80 -e RGW_NAME=gwnode -v /www/ceph:/etc/ceph ceph/radosgw
+
+# 10. 查看ceph集群状态
+sleep 10 && docker exec monnode ceph -s
+
+
+```
+
+
+
+```go
+ubuntu@x:~$ docker exec -it gwnode radosgw-admin user create --uid=user1 --display-name=user1
+{
+    "user_id": "user1",
+    "display_name": "user1",
+    "email": "",
+    "suspended": 0,
+    "max_buckets": 1000,
+    "auid": 0,
+    "subusers": [],
+    "keys": [
+        {
+            "user": "user1",
+            "access_key": "35WISHNZFS6ZGCNIOV6Z",
+            "secret_key": "DTD9a6DwymN5CSEaTmls3HHVPSyn81EkqX9JRqPm"
+        }
+    ],
+    "swift_keys": [],
+    "caps": [],
+    "op_mask": "read, write, delete",
+    "default_placement": "",
+    "placement_tags": [],
+    "bucket_quota": {
+        "enabled": false,
+        "max_size_kb": -1,
+        "max_objects": -1
+    },
+    "user_quota": {
+        "enabled": false,
+        "max_size_kb": -1,
+        "max_objects": -1
+    },
+    "temp_url_keys": []
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```git 
+git switch -c v6.0
+
+git push origin HEAD:v6.0
 ```

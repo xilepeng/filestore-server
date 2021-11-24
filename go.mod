@@ -9,7 +9,11 @@ require (
 	github.com/xilepeng/LeidianNetdisk v0.0.0-20211121121058-a0856f7fcb91
 )
 
+require github.com/jmespath/go-jmespath v0.4.0 // indirect
+
 require (
+	github.com/aws/aws-sdk-go v1.42.11
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	gopkg.in/amz.v1 v1.0.0-20150111123259-ad23e96a31d2
 )

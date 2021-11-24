@@ -12,7 +12,10 @@ import (
 
 	dblayer "LeiliNetdisk/db"
 	"LeiliNetdisk/meta"
+	"LeiliNetdisk/store/ceph"
 	"LeiliNetdisk/util"
+
+	"gopkg.in/amz.v1/s3"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,8 +38,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 保存元数据信息
 		fileMeta := meta.FileMeta{
 			FileName: head.Filename,
+			//Ubuntu 20
 			Location: "/tmp/" + head.Filename,
-			// mac os
+			// mac os   ➜  ~ mkdir tmp
 			// Location: "/Users/x/tmp/" + head.Filename,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
@@ -57,6 +61,15 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 游标重新回到文件头部
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
+
+		//同时将文件写入 ceph 存储
+		newFile.Seek(0, 0)
+		data, _ := ioutil.ReadAll(newFile)
+		bucket := ceph.GetCephBucket("userfile")
+		cephPath := "/ceph/" + fileMeta.FileSha1
+		_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+		fileMeta.Location = cephPath
+
 		// meta.UpdateFileMeta(fileMeta)
 		_ = meta.UpdateFileMetaDB(fileMeta)
 		// 更新用户文件表记录
