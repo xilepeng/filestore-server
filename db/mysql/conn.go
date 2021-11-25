@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	cfg "LeiliNetdisk/config"
 	"database/sql"
 	"fmt"
 	"log"
@@ -14,7 +15,8 @@ var db *sql.DB
 
 func init() {
 	// ubuntu 20.04
-	db, _ = sql.Open("mysql", "root:123456@tcp(127.0.0.1:3306)/fileserver?charset=utf8")
+
+	db, _ = sql.Open("mysql", cfg.MySQLSource)
 	//mac os
 	// db, _ = sql.Open("mysql", "root:123456@tcp(192.168.105.9:3306)/fileserver?charset=utf8")
 

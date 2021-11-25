@@ -846,3 +846,15 @@ git switch -c v6.0
 
 git push origin HEAD:v6.0
 ```
+
+
+## V7.0 阿里云OSS实现海量数据上云
+
+
+
+```git 
+git switch -c v7.0
+
+git push origin HEAD:v7.0
+```
+

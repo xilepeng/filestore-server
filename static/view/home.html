@@ -129,13 +129,14 @@
           cell = x.insertCell();
           cell.innerHTML = '<button class="btn btn-success" ' +
             'style="height:30px;margin:5px 0;"' +
-            'onClick = "downloadFile(\'http://localhost:8080/file/' +
+            'onClick = "downloadFile(\'http://192.168.105.4:8080/file/' +
             'downloadurl?filehash=' + data[i].FileHash + '&' + queryParams() + '\')">下载</button>';
         }
       }
     });
   }
 
+  //本机 cros 如果跨域：将192.168.105.4 换成 localhost 
   function toUploadFile() {
     window.location.href = '/file/upload?' + queryParams();
   }

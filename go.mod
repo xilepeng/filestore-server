@@ -9,9 +9,13 @@ require (
 	github.com/xilepeng/LeidianNetdisk v0.0.0-20211121121058-a0856f7fcb91
 )
 
-require github.com/jmespath/go-jmespath v0.4.0 // indirect
+require (
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
+)
 
 require (
+	github.com/aliyun/aliyun-oss-go-sdk v2.2.0+incompatible
 	github.com/aws/aws-sdk-go v1.42.11
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

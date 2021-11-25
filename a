@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error>
+  <Code>AccessDenied</Code>
+  <Message>Anonymous user has no right to access this bucket.</Message>
+  <RequestId>619F12FB50ED1C3135B538FC</RequestId>
+  <HostId>bucket-filestore3.oss-cn-beijing.aliyuncs.com</HostId>
+</Error>

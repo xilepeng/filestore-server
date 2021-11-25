@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	cfg "LeiliNetdisk/.config"
 	"LeiliNetdisk/handler"
 )
 
@@ -28,6 +29,7 @@ func main() {
 
 	// 秒传接口
 	http.HandleFunc("/file/fastupload", handler.HTTPInterceptor(handler.TryFastUploadHandler))
+	http.HandleFunc("/file/downloadurl", handler.HTTPInterceptor(handler.DownloadURLHandler))
 
 	// 分块上传接口
 	http.HandleFunc("/file/mpupload/init", handler.HTTPInterceptor(handler.InitialMultipartUploadHandler))
@@ -40,7 +42,10 @@ func main() {
 	http.HandleFunc("/user/signin", handler.SignInHandler)
 	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))
 
-	err := http.ListenAndServe(":8080", nil)
+	fmt.Printf("服务开始启动，监听[%s]中...\n", cfg.UploadServiceHost)
+	// 启动服务并监听端口
+	// err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(cfg.UploadServiceHost, nil)
 	if err != nil {
 		fmt.Printf("Failed to start server, err:%s", err.Error())
 	}
