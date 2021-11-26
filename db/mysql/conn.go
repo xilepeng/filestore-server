@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	cfg "LeiliNetdisk/.config"
+	cfg "LeiliNetdisk/config"
 	"database/sql"
 	"fmt"
 	"log"

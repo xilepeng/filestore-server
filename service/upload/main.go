@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	cfg "LeiliNetdisk/.config"
+	cfg "LeiliNetdisk/config"
 	"LeiliNetdisk/handler"
 )
 

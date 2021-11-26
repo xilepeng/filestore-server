@@ -858,3 +858,37 @@ git switch -c v7.0
 git push origin HEAD:v7.0
 ```
 
+
+
+
+
+
+
+## V8.0 RabbitMQ实现异步存储 (上传与转移解耦，提高稳定性)
+
+```go
+ubuntu@x:~$ sudo mkdir /data/rabbitmq -p
+
+ubuntu@x:~$ docker run -d --hostname rabbit-svr --name rabbit -p 5672:5672 -p 15672:15672 -p 25672:25672 -v /data/rabbitmq:/var/lib/rabbitmq rabbitmq:management
+
+# for RabbitMQ 3.9, the latest series
+docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.9-management
+
+
+
+
+ubuntu@x:~/share/LeiliNetdisk$ go run service/transfer/main.go
+2021/11/26 11:44:33 文件转移服务启动中，开始监听异步转移任务队列...
+2021/11/26 11:45:34 {"FileHash":"66a173004cb8d07745d04c05eac69a7d2ffca1da","CurLocation":"/tmp/redis-trib.rb","DestLocation":"oss/66a173004cb8d07745d04c05eac69a7d2ffca1da","DestStoreType":3}
+
+```
+
+
+
+
+
+```git 
+git switch -c v8.0
+
+git push origin HEAD:v8.0
+```
