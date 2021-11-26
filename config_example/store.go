@@ -1,10 +1,10 @@
 package config
 
 import (
-	cmn "LeiliNetdisk/common"
+	cmn "filestore-server/common"
 )
 
 const (
-	// 设置当前文件的存储类型
+	// CurrentStoreType : 设置当前文件的存储类型
 	CurrentStoreType = cmn.StoreLocal
 )
