@@ -1,7 +1,7 @@
 package meta
 
 import (
-	mydb "LeiliNetdisk/db"
+	mydb "filestore-server/db"
 	"sort"
 )
 

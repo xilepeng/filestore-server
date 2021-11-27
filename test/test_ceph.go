@@ -1,7 +1,7 @@
 package main
 
 import (
-	"LeiliNetdisk/store/ceph"
+	"filestore-server/store/ceph"
 	"fmt"
 	"os"
 

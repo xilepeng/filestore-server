@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package go.micro.service.download;
+
+//编译生成文件路径及包名
+option go_package = "./;proto";
+
+service DownloadService {
+    // 获取下载入口地址
+    rpc DownloadEntry(ReqEntry) returns (RespEntry) {}
+}
+
+message ReqEntry {
+}
+
+message RespEntry {
+    int32 code = 1;
+    string message = 2;
+    string entry = 3;
+}

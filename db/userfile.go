@@ -1,7 +1,7 @@
 package db
 
 import (
-	mydb "LeiliNetdisk/db/mysql"
+	mydb "filestore-server/db/mysql"
 	"fmt"
 	"time"
 )
@@ -60,4 +60,68 @@ func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
 		userFiles = append(userFiles, ufile)
 	}
 	return userFiles, nil
+}
+
+// DeleteUserFile : 删除文件(标记删除)
+func DeleteUserFile(username, filehash string) bool {
+	stmt, err := mydb.DBConn().Prepare(
+		"update tbl_user_file set status=2 where user_name=? and file_sha1=? limit 1")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(username, filehash)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	return true
+}
+
+// RenameFileName : 文件重命名
+func RenameFileName(username, filehash, filename string) bool {
+	stmt, err := mydb.DBConn().Prepare(
+		"update tbl_user_file set file_name=? where user_name=? and file_sha1=? limit 1")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(filename, username, filehash)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	return true
+}
+
+// QueryUserFileMeta : 获取用户单个文件信息
+func QueryUserFileMeta(username string, filehash string) (*UserFile, error) {
+	stmt, err := mydb.DBConn().Prepare(
+		"select file_sha1,file_name,file_size,upload_at," +
+			"last_update from tbl_user_file where user_name=? and file_sha1=?  limit 1")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(username, filehash)
+	if err != nil {
+		return nil, err
+	}
+
+	ufile := UserFile{}
+	if rows.Next() {
+		err = rows.Scan(&ufile.FileHash, &ufile.FileName, &ufile.FileSize,
+			&ufile.UploadAt, &ufile.LastUpdated)
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil, err
+		}
+	}
+
+	return &ufile, nil
 }

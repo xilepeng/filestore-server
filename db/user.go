@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	mydb "LeiliNetdisk/db/mysql"
+	mydb "filestore-server/db/mysql"
 )
 
 // User : 用户表model
@@ -98,4 +98,22 @@ func GetUserInfo(username string) (User, error) {
 		return user, err
 	}
 	return user, nil
+}
+
+// UserExist : 查询用户是否存在
+func UserExist(username string) (bool, error) {
+
+	stmt, err := mydb.DBConn().Prepare(
+		"select 1 from tbl_user where user_name=? limit 1")
+	if err != nil {
+		fmt.Println(err.Error())
+		return false, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(username)
+	if err != nil {
+		return false, err
+	}
+	return rows.Next(), nil
 }

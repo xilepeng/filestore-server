@@ -1,7 +1,7 @@
 package mq
 
 import (
-	"LeiliNetdisk/config"
+	"filestore-server/config"
 	"log"
 
 	"github.com/streadway/amqp"
@@ -36,18 +36,16 @@ func init() {
 }
 
 func initChannel() bool {
-	//1.判断 channel 是否已经创建过
 	if channel != nil {
 		return true
 	}
-	//2.获得rabbitmq 的一个连接
+
 	conn, err := amqp.Dial(config.RabbitURL)
 	if err != nil {
 		log.Println(err.Error())
 		return false
 	}
 
-	//3.打开一个channel,用于消息的发布与接收
 	channel, err = conn.Channel()
 	if err != nil {
 		log.Println(err.Error())
@@ -56,25 +54,21 @@ func initChannel() bool {
 	return true
 }
 
-// Publish:发布消息
+// Publish : 发布消息
 func Publish(exchange, routingKey string, msg []byte) bool {
-	//1.判断channel是否正常
 	if !initChannel() {
 		return false
 	}
 
-	//2.执行消息发布动作
-	err := channel.Publish(
+	if nil == channel.Publish(
 		exchange,
 		routingKey,
-		false, // 如果没有对应的queue, 就会丢弃这条小心
-		false,
+		false, // 如果没有对应的queue, 就会丢弃这条消息
+		false, //
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        msg})
-	if err != nil {
-		log.Println(err.Error())
-		return false
+			Body:        msg}) {
+		return true
 	}
-	return true
+	return false
 }

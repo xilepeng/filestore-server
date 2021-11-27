@@ -1,8 +1,8 @@
 package mysql
 
 import (
-	cfg "LeiliNetdisk/config"
 	"database/sql"
+	cfg "filestore-server/config"
 	"fmt"
 	"log"
 	"os"

@@ -1,4 +1,4 @@
-# LeiliNetdisk
+# filestore-server
 
 
 
@@ -877,7 +877,7 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.9-man
 
 
 
-ubuntu@x:~/share/LeiliNetdisk$ go run service/transfer/main.go
+ubuntu@x:~/share/filestore-server$ go run service/transfer/main.go
 2021/11/26 11:44:33 文件转移服务启动中，开始监听异步转移任务队列...
 2021/11/26 11:45:34 {"FileHash":"66a173004cb8d07745d04c05eac69a7d2ffca1da","CurLocation":"/tmp/redis-trib.rb","DestLocation":"oss/66a173004cb8d07745d04c05eac69a7d2ffca1da","DestStoreType":3}
 
@@ -891,4 +891,103 @@ ubuntu@x:~/share/LeiliNetdisk$ go run service/transfer/main.go
 git switch -c v8.0
 
 git push origin HEAD:v8.0
+```
+
+
+
+## V9.0 架构微服务化 (全面优化系统架构及性能)
+
+新增轻量级Gin web框架及改造演示； 
+新增gRPC网络通讯框架； 
+新增API网关, 实现限流及熔断等功能； 
+新增服务注册功能，实现服务自发现和负载均衡；
+
+
+
+```go
+sudo apt install protobuf-compiler -y
+
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+go install github.com/golang/protobuf/protoc-gen-go@latest
+
+go get github.com/micro/protoc-gen-micro/v2
+go install github.com/micro/protoc-gen-micro@latest
+
+
+
+## Ubuntu
+
+ubuntu@x:~$ cd ~/go/bin
+ubuntu@x:~/go/bin$ ls
+protoc-gen-go  protoc-gen-go-grpc  protoc-gen-micro
+
+ubuntu@x:~/go/bin$ sudo cp protoc-gen-go /usr/local/bin/
+ubuntu@x:~/go/bin$ sudo cp protoc-gen-micro /usr/local/bin/
+
+
+# Mac 
+brew install protobuf
+
+# Protoc环境变量
+export PROTOBUF=/usr/local/share/emacs/site-lisp/protobuf
+export PATH=$PROTOBUF/bin:$PATH
+export PATH=$PATH:$GOPATH/bin
+
+
+
+ubuntu@x:~/share/filestore-server$ 
+protoc --proto_path=service/account/proto --go_out=service/account/proto --micro_out=service/account/proto service/account/proto/user.proto
+
+
+
+docker run -d -p 8400:8400 -p 8500:8500 -p 8600:53/udp --restart=always -v /data/consul:/consul/data -e CONSUL_BIND_INTERFACE='eth0' --name=consul consul:latest agent -server -bootstrap -ui -node=1 -client='0.0.0.0'
+
+
+http://192.168.105.4:8500
+
+
+提示：/consul/data 是 Consul 持久化地方，如果需要持久化那 Dooker 启动时候需要给它指定一个数据卷 -v /data/consul:/consul/data。
+
+Consul 命令简单介绍
+agent : 表示启动 Agent 进程。
+-server：表示启动 Consul Server 模式。
+-client：表示启动 Consul Cilent 模式。
+-bootstrap：表示这个节点是 Server-Leader ，每个数据中心只能运行一台服务器。技术角度上讲 Leader 是通过 Raft 算法选举的，但是集群第一次启动时需要一个引导 Leader，在引导群集后，建议不要使用此标志。
+-ui：表示启动 Web UI 管理器，默认开放端口 8500，所以上面使用 Docker 命令把 8500 端口对外开放。
+-node：节点的名称，集群中必须是唯一的。
+-client：表示 Consul 将绑定客户端接口的地址，0.0.0.0 表示所有地址都可以访问。
+-join：表示加入到某一个集群中去。 如：-json=192.168.1.23
+Web 管理器
+上面命令已经启动了 Consul 和 Web 管理器，我们现在打开 Web 管理器来看一下是否启动成功。通过浏览器浏览 Http://{serverIp}:8500 。
+
+
+go run service/account/main.go --registry=consul
+
+
+
+
+
+
+
+
+protoc --proto_path=service/account/proto --go_out=service/account/proto --micro_out=service/account/proto service/account/proto/user.proto
+
+
+protoc --proto_path=service/dbproxy/proto --go_out=service/dbproxy/proto --micro_out=service/dbproxy/proto service/dbproxy/proto/proxy.proto
+
+
+protoc --proto_path=service/download/proto --go_out=service/download/proto --micro_out=service/download/proto service/download/proto/download.proto
+
+
+protoc --proto_path=service/upload/proto --go_out=service/upload/proto --micro_out=service/upload/proto service/upload/proto/upload.proto
+
+
+```
+
+
+```git 
+git switch -c v9.0
+
+git push origin HEAD:v9.0
 ```

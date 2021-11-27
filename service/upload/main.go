@@ -2,51 +2,39 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
+	"time"
 
-	cfg "LeiliNetdisk/config"
-	"LeiliNetdisk/handler"
+	micro "github.com/micro/go-micro"
+
+	cfg "filestore-server/service/upload/config"
+	upProto "filestore-server/service/upload/proto"
+	"filestore-server/service/upload/route"
+	upRpc "filestore-server/service/upload/rpc"
 )
 
-func main() {
+func startRpcService() {
+	service := micro.NewService(
+		micro.Name("go.micro.service.upload"), // 服务名称
+		micro.RegisterTTL(time.Second*10),     // TTL指定从上一次心跳间隔起，超过这个时间服务会被服务发现移除
+		micro.RegisterInterval(time.Second*5), // 让服务在指定时间内重新注册，保持TTL获取的注册时间有效
+	)
+	service.Init()
 
-	// 静态资源处理
-	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	pwd, _ := os.Getwd()
-	fmt.Println(pwd + " " + os.Args[0])
-	http.Handle("/static/", http.FileServer(http.Dir(filepath.Join(pwd, "./"))))
-
-	// 文件存取接口
-	http.HandleFunc("/file/upload", handler.HTTPInterceptor(handler.UploadHandler))
-	http.HandleFunc("/file/upload/suc", handler.HTTPInterceptor(handler.UploadSucHandler))
-	http.HandleFunc("/file/meta", handler.HTTPInterceptor(handler.GetFileMetaHandler))
-	http.HandleFunc("/file/query", handler.HTTPInterceptor(handler.FileQueryHandler))
-	http.HandleFunc("/file/download", handler.HTTPInterceptor(handler.DownloadHandler))
-	http.HandleFunc("/file/update", handler.HTTPInterceptor(handler.FileMetaUpdateHandler))
-	http.HandleFunc("/file/delete", handler.HTTPInterceptor(handler.FileDeleteHandler))
-
-	// 秒传接口
-	http.HandleFunc("/file/fastupload", handler.HTTPInterceptor(handler.TryFastUploadHandler))
-	http.HandleFunc("/file/downloadurl", handler.HTTPInterceptor(handler.DownloadURLHandler))
-
-	// 分块上传接口
-	http.HandleFunc("/file/mpupload/init", handler.HTTPInterceptor(handler.InitialMultipartUploadHandler))
-	http.HandleFunc("/file/mpupload/uppart", handler.HTTPInterceptor(handler.UploadPartHandler))
-	http.HandleFunc("/file/mpupload/complete", handler.HTTPInterceptor(handler.CompleteUploadHandler))
-
-	// 用户相关接口
-	http.HandleFunc("/", handler.SignInHandler)
-	http.HandleFunc("/user/signup", handler.SignupHandler)
-	http.HandleFunc("/user/signin", handler.SignInHandler)
-	http.HandleFunc("/user/info", handler.HTTPInterceptor(handler.UserInfoHandler))
-
-	fmt.Printf("服务开始启动，监听[%s]中...\n", cfg.UploadServiceHost)
-	// 启动服务并监听端口
-	// err := http.ListenAndServe(":8080", nil)
-	err := http.ListenAndServe(cfg.UploadServiceHost, nil)
-	if err != nil {
-		fmt.Printf("Failed to start server, err:%s", err.Error())
+	upProto.RegisterUploadServiceHandler(service.Server(), new(upRpc.Upload))
+	if err := service.Run(); err != nil {
+		fmt.Println(err)
 	}
+}
+
+func startApiService() {
+	router := route.Router()
+	router.Run(cfg.UploadServiceHost)
+}
+
+func main() {
+	// api 服务
+	go startApiService()
+
+	// rpc 服务
+	startRpcService()
 }

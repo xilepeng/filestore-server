@@ -1,7 +1,7 @@
 package mq
 
 import (
-	cmn "LeiliNetdisk/common"
+	cmn "filestore-server/common"
 )
 
 // TransferData : 将要写到rabbitmq的数据的结构体

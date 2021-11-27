@@ -1,7 +1,7 @@
 package oss
 
 import (
-	cfg "LeiliNetdisk/config"
+	cfg "filestore-server/config"
 	"fmt"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -14,7 +14,8 @@ func Client() *oss.Client {
 	if ossCli != nil {
 		return ossCli
 	}
-	ossCli, err := oss.New(cfg.OSSEndpoint, cfg.OSSAccesskeyID, cfg.OSSAccessKeySecret)
+	ossCli, err := oss.New(cfg.OSSEndpoint,
+		cfg.OSSAccesskeyID, cfg.OSSAccessKeySecret)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -29,6 +30,7 @@ func Bucket() *oss.Bucket {
 		bucket, err := cli.Bucket(cfg.OSSBucket)
 		if err != nil {
 			fmt.Println(err.Error())
+			return nil
 		}
 		return bucket
 	}
@@ -52,4 +54,13 @@ func BuildLifecycleRule(bucketName string) {
 	rules := []oss.LifecycleRule{ruleTest1}
 
 	Client().SetBucketLifecycle(bucketName, rules)
+}
+
+// GenFileMeta :  构造文件元信息
+func GenFileMeta(metas map[string]string) []oss.Option {
+	options := []oss.Option{}
+	for k, v := range metas {
+		options = append(options, oss.Meta(k, v))
+	}
+	return options
 }

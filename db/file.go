@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	mydb "LeiliNetdisk/db/mysql"
+	mydb "filestore-server/db/mysql"
 )
 
 // TableFile : 文件表对应的一些字段
