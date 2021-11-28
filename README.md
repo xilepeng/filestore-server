@@ -95,10 +95,14 @@ ubuntu@master:~$ docker info
  Registry Mirrors:
   https://hkaofvr0.mirror.aliyuncs.com/
 
+
+
 # Install Compose on Linux systems
 
+# 方法一：
 sudo apt install docker-compose -y
 
+# 方法二：
 ubuntu@master:~$ sudo curl -L "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
 ubuntu@master:~$ sudo chmod +x /usr/local/bin/docker-compose
@@ -990,4 +994,140 @@ protoc --proto_path=service/upload/proto --go_out=service/upload/proto --micro_o
 git switch -c v9.0
 
 git push origin HEAD:v9.0
+```
+
+
+## V10.0 k8s&Docker容器化实战 (容器化：应用上云部署的基石)
+
+
+```go
+
+docker network create fileserver
+
+# 启动微服务
+sudo docker-compose up --scale upload=2 --scale download=2 -d
+
+
+# 启动 traefik 反向代理
+sudo docker-compose up -d
+
+
+vim /etc/hosts
+
+192.168.105.4 upload.fileserver.com
+
+192.168.105.4 download.fileserver.com
+
+192.168.105.4 apigw.fileserver.com
+
+
+
+
+
+```
+
+
+## Ubuntu 安装 k8s
+```go
+
+
+# 在master添加hosts
+sudo vim /etc/hosts
+
+52.78.32.63 master
+
+
+# 关闭防火墙
+systemctl stop firewalld
+systemctl disable firewalld
+
+
+# 关闭selinux
+
+setenforce 0
+
+cat /etc/selinux/config
+
+# 开启路由转发
+
+vim /etc/sysctl.d/k8s.conf
+
+
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+
+
+# 生效
+sysctl -p /etc/sysctl.d/k8s.conf
+
+
+
+
+
+
+# iTerm2多个窗口同时输入命令
+打开这个功能的快捷键就是：
+⌘(command) + ⇧(shift) + i  
+会弹出告警信息，点OK确认。  关闭其实也很简单。再次输入刚刚打开的那个命令就行了。
+
+
+Ubuntu下更改主机名
+vim /etc/hostname
+master
+
+重启
+
+
+
+vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgrpupfs"
+Environment="KUBELET_EXTAR_ARGS=--fail-swap-on=false"
+
+systemctl daemon-reload
+
+
+
+kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=52.78.32.63
+
+
+
+```
+
+
+
+
+## 在Docker中下载并运行Jenkins （在macOS和Linux上）
+```go
+
+docker run \
+  -u root \
+  --rm \
+  -d \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkinsci/blueocean
+```
+
+
+
+
+
+
+
+```go
+
+docker pull coredns/coredns:1.8.6
+docker tag coredns/coredns:1.8.6 registry.aliyuncs.com/google_containers/coredns:v1.8.6
+```
+
+
+
+```git 
+git switch -c v10.0
+
+git push origin HEAD:v10.0
 ```
