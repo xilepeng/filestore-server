@@ -10,9 +10,13 @@
 
 ```s
 
-➜  ~ multipass launch -n x -c 1 -m 4G -d 40G
+➜  ~ multipass launch -n master -c 2 -m 4G -d 40G
 Launched: main
-➜  ~ multipass shell x
+➜  ~ multipass shell master
+
+multipass launch -n node1 -c 2 -m 4G -d 40G
+
+multipass shell node1
 
 
 ubuntu@main:~$ sudo mv /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -997,7 +1001,23 @@ git push origin HEAD:v9.0
 ```
 
 
+
+
+
+
+
 ## V10.0 k8s&Docker容器化实战 (容器化：应用上云部署的基石)
+
+
+```go
+multipass launch -n master -c 2 -m 4G -d 40G
+multipass shell master
+
+multipass launch -n node1 -c 2 -m 4G -d 40G
+multipass shell node1
+
+```
+
 
 
 ```go
@@ -1034,7 +1054,8 @@ vim /etc/hosts
 # 在master添加hosts
 sudo vim /etc/hosts
 
-52.78.32.63 master
+192.168.105.5 master
+192.168.105.6 node1
 
 
 # 关闭防火墙
@@ -1061,23 +1082,70 @@ net.ipv4.ip_forward = 1
 # 生效
 sysctl -p /etc/sysctl.d/k8s.conf
 
+```
 
 
 
 
 
-# iTerm2多个窗口同时输入命令
-打开这个功能的快捷键就是：
-⌘(command) + ⇧(shift) + i  
-会弹出告警信息，点OK确认。  关闭其实也很简单。再次输入刚刚打开的那个命令就行了。
+
+## 允许 iptables 检查桥接流量
+
+确保 br_netfilter 模块被加载。这一操作可以通过运行 lsmod | grep br_netfilter 来完成。若要显式加载该模块，可执行 sudo modprobe br_netfilter。
+
+为了让你的 Linux 节点上的 iptables 能够正确地查看桥接流量，你需要确保在你的 sysctl 配置中将 net.bridge.bridge-nf-call-iptables 设置为 1。例如：
+```go
 
 
-Ubuntu下更改主机名
-vim /etc/hostname
-master
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
 
-重启
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+```
 
+
+1. 更新 apt 包索引并安装使用 Kubernetes apt 仓库所需要的包：
+```go
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
+```
+
+2. 下载 Google Cloud 公开签名秘钥：
+```go
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg
+```
+
+3. 添加 Kubernetes apt 仓库：
+```go
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+```
+
+
+4. 更新 apt 包索引，安装 kubelet、kubeadm 和 kubectl，并锁定其版本：
+```go
+
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+```
+
+
+
+
+
+
+```go
+
+
+ubuntu@master:~$ docker info
+
+Cgroup Driver: cgroupfs
 
 
 vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
@@ -1089,7 +1157,93 @@ systemctl daemon-reload
 
 
 
-kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=52.78.32.63
+
+
+
+
+
+ubuntu@master:~$ kubeadm config images list
+k8s.gcr.io/kube-apiserver:v1.22.4
+k8s.gcr.io/kube-controller-manager:v1.22.4
+k8s.gcr.io/kube-scheduler:v1.22.4
+k8s.gcr.io/kube-proxy:v1.22.4
+k8s.gcr.io/pause:3.5
+k8s.gcr.io/etcd:3.5.0-0
+k8s.gcr.io/coredns/coredns:v1.8.4
+
+
+kubeadm config images pull --image-repository=registry.aliyuncs.com/google_containers
+
+ubuntu@master:~$ kubeadm config images pull --image-repository=registry.aliyuncs.com/google_containers
+[config/images] Pulled registry.aliyuncs.com/google_containers/kube-apiserver:v1.22.4
+[config/images] Pulled registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.4
+[config/images] Pulled registry.aliyuncs.com/google_containers/kube-scheduler:v1.22.4
+[config/images] Pulled registry.aliyuncs.com/google_containers/kube-proxy:v1.22.4
+[config/images] Pulled registry.aliyuncs.com/google_containers/pause:3.5
+[config/images] Pulled registry.aliyuncs.com/google_containers/etcd:3.5.0-0
+[config/images] Pulled registry.aliyuncs.com/google_containers/coredns:v1.8.4
+
+
+
+ubuntu@master:~$ docker images
+REPOSITORY                                                        TAG       IMAGE ID       CREATED        SIZE
+registry.aliyuncs.com/google_containers/kube-apiserver            v1.22.4   8a5cc299272d   13 days ago    128MB
+registry.aliyuncs.com/google_containers/kube-controller-manager   v1.22.4   0ce02f92d3e4   13 days ago    122MB
+registry.aliyuncs.com/google_containers/kube-scheduler            v1.22.4   721ba97f54a6   13 days ago    52.7MB
+registry.aliyuncs.com/google_containers/kube-proxy                v1.22.4   edeff87e4802   13 days ago    104MB
+registry.aliyuncs.com/google_containers/etcd                      3.5.0-0   004811815584   5 months ago   295MB
+registry.aliyuncs.com/google_containers/coredns                   v1.8.4    8d147537fb7d   6 months ago   47.6MB
+registry.aliyuncs.com/google_containers/pause                     3.5       ed210e3e4a5b   8 months ago   683kB
+
+
+docker tag registry.aliyuncs.com/google_containers/coredns:v1.8.4 k8s.gcr.io/coredns/coredns:v1.8.4
+docker rmi registry.aliyuncs.com/google_containers/coredns:v1.8.4
+
+docker tag registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.4 k8s.gcr.io/kube-controller-manager:v1.22.4
+docker rmi registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.4
+
+
+images=(  # 下面的镜像应该去除"k8s.gcr.io/"的前缀，版本换成上面获取到的版本
+    kube-apiserver:v1.22.4
+    ube-controller-manager:v1.22.4
+    kube-scheduler:v1.22.4
+    kube-proxy:v1.22.4
+    pause:3.5
+    etcd:3.5.0-0
+    coredns:v1.8.4
+)
+
+for imageName in ${images[@]} ; do
+    docker tag registry.aliyuncs.com/google_containers/$imageName k8s.gcr.io/$imageName
+    docker rmi registry.aliyuncs.com/google_containers/$imageName
+done
+
+
+
+
+
+
+ubuntu@master:~$ docker images
+REPOSITORY                           TAG       IMAGE ID       CREATED        SIZE
+k8s.gcr.io/kube-apiserver            v1.22.4   8a5cc299272d   13 days ago    128MB
+k8s.gcr.io/kube-controller-manager   v1.22.4   0ce02f92d3e4   13 days ago    122MB
+k8s.gcr.io/kube-scheduler            v1.22.4   721ba97f54a6   13 days ago    52.7MB
+k8s.gcr.io/kube-proxy                v1.22.4   edeff87e4802   13 days ago    104MB
+k8s.gcr.io/etcd                      3.5.0-0   004811815584   5 months ago   295MB
+k8s.gcr.io/coredns                   v1.8.4    8d147537fb7d   6 months ago   47.6MB
+k8s.gcr.io/pause                     3.5       ed210e3e4a5b   8 months ago   683kB
+
+
+
+
+
+
+sudo kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.105.5
+
+
+sudo kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.105.5 --image-repository registry.aliyuncs.com/google_containers
+
+
 
 
 
