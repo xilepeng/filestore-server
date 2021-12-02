@@ -42,7 +42,7 @@ ubuntu@main:~$ sudo apt-get update && sudo apt-get upgrade -y
 
 
 
-➜  share multipass mount /Users/x/share main:/home/ubuntu/share
+➜  share multipass mount /Users/x/share master:/home/ubuntu/share
 ➜  share multipass info main
 Name:           main
 State:          Running
@@ -80,15 +80,27 @@ groupadd: group 'docker' already exists
 ubuntu@master:~$ sudo gpasswd -a ubuntu docker
 Adding user ubuntu to group docker
 ubuntu@master:~$ sudo service docker restart
+
+ubuntu@master:~$ docker info
+
+Cgroup Driver: cgroupfs
+
 ubuntu@master:~$ sudo vim /etc/docker/daemon.json
 
-{ "registry-mirrors": [
-    "https://hkaofvr0.mirror.aliyuncs.com"
-  ]
- }
+{ "registry-mirrors": ["https://hkaofvr0.mirror.aliyuncs.com"],
+        "exec-opts": ["native.cgroupdriver=systemd"]
+}
+
+systemctl restart docker
+systemctl status docker
 
 ubuntu@master:~$ sudo systemctl daemon-reload
 ubuntu@master:~$ sudo systemctl restart docker
+
+
+
+
+
 # 重启 iTerm2
 ubuntu@node1:~$ exit
 logout
@@ -1062,12 +1074,31 @@ sudo vim /etc/hosts
 systemctl stop firewalld
 systemctl disable firewalld
 
+# 关闭防火墙
+ubuntu@master:~$ sudo apt-get install ufw
+
+ubuntu@master:~$ sudo ufw disable
+Firewall stopped and disabled on system startup
+ubuntu@master:~$ sudo ufw status
+Status: inactive
+
 
 # 关闭selinux
 
 setenforce 0
 
 cat /etc/selinux/config
+
+# 关闭selinux
+
+ubuntu@master:~$ sudo vim /etc/selinux/config
+
+SELINUX=disabled
+
+
+# 关闭swap
+ubuntu@master:~$ sudo sed -ri 's/.*swap.*/#&/' /etc/fstab
+
 
 # 开启路由转发
 
@@ -1147,18 +1178,27 @@ ubuntu@master:~$ docker info
 
 Cgroup Driver: cgroupfs
 
+ubuntu@master:~$ sudo vim /etc/docker/daemon.json
+
+{ "registry-mirrors": ["https://hkaofvr0.mirror.aliyuncs.com"],
+        "exec-opts": ["native.cgroupdriver=systemd"]
+}
+
+systemctl restart docker && systemctl status docker
+
+
 
 vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgrpupfs"
 Environment="KUBELET_EXTAR_ARGS=--fail-swap-on=false"
+
+
 
 systemctl daemon-reload
 
-
-
-
-
+重新启动kubelet.service
+		1.systemctl daemon-reload
+		2.systemctl restart kubelet.service
 
 
 
@@ -1170,6 +1210,10 @@ k8s.gcr.io/kube-proxy:v1.22.4
 k8s.gcr.io/pause:3.5
 k8s.gcr.io/etcd:3.5.0-0
 k8s.gcr.io/coredns/coredns:v1.8.4
+
+
+node1:
+
 
 
 kubeadm config images pull --image-repository=registry.aliyuncs.com/google_containers
@@ -1196,16 +1240,13 @@ registry.aliyuncs.com/google_containers/coredns                   v1.8.4    8d14
 registry.aliyuncs.com/google_containers/pause                     3.5       ed210e3e4a5b   8 months ago   683kB
 
 
-docker tag registry.aliyuncs.com/google_containers/coredns:v1.8.4 k8s.gcr.io/coredns/coredns:v1.8.4
-docker rmi registry.aliyuncs.com/google_containers/coredns:v1.8.4
 
-docker tag registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.4 k8s.gcr.io/kube-controller-manager:v1.22.4
-docker rmi registry.aliyuncs.com/google_containers/kube-controller-manager:v1.22.4
+
 
 
 images=(  # 下面的镜像应该去除"k8s.gcr.io/"的前缀，版本换成上面获取到的版本
     kube-apiserver:v1.22.4
-    ube-controller-manager:v1.22.4
+    kube-controller-manager:v1.22.4
     kube-scheduler:v1.22.4
     kube-proxy:v1.22.4
     pause:3.5
@@ -1213,10 +1254,14 @@ images=(  # 下面的镜像应该去除"k8s.gcr.io/"的前缀，版本换成上�
     coredns:v1.8.4
 )
 
+
 for imageName in ${images[@]} ; do
     docker tag registry.aliyuncs.com/google_containers/$imageName k8s.gcr.io/$imageName
     docker rmi registry.aliyuncs.com/google_containers/$imageName
 done
+
+docker tag k8s.gcr.io/coredns:v1.8.4 k8s.gcr.io/coredns/coredns:v1.8.4
+docker rmi k8s.gcr.io/coredns:v1.8.4
 
 
 
@@ -1230,7 +1275,7 @@ k8s.gcr.io/kube-controller-manager   v1.22.4   0ce02f92d3e4   13 days ago    122
 k8s.gcr.io/kube-scheduler            v1.22.4   721ba97f54a6   13 days ago    52.7MB
 k8s.gcr.io/kube-proxy                v1.22.4   edeff87e4802   13 days ago    104MB
 k8s.gcr.io/etcd                      3.5.0-0   004811815584   5 months ago   295MB
-k8s.gcr.io/coredns                   v1.8.4    8d147537fb7d   6 months ago   47.6MB
+k8s.gcr.io/coredns/coredns           v1.8.4    8d147537fb7d   6 months ago   47.6MB
 k8s.gcr.io/pause                     3.5       ed210e3e4a5b   8 months ago   683kB
 
 
@@ -1240,14 +1285,201 @@ k8s.gcr.io/pause                     3.5       ed210e3e4a5b   8 months ago   683
 
 sudo kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.105.5
 
-
+或：
 sudo kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.105.5 --image-repository registry.aliyuncs.com/google_containers
 
 
 
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 192.168.105.5:6443 --token 8dtoxq.mc8y47svyn1qbs3o \
+	--discovery-token-ca-cert-hash sha256:276f67ebefc068beeb31005935889d6874a36cc26c12fd3663d6d2aea1c15e0d
+
+
+
+echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> /etc/profile
+
+source /etc/profile
+
+
+
+
+For Kubernetes v1.17+ 
+
+https://github.com/flannel-io/flannel
+
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+kubectl apply -f kube-flannel.yml
+
+
+root@master:/home/ubuntu# kubectl apply -f kube-flannel.yml
+Warning: policy/v1beta1 PodSecurityPolicy is deprecated in v1.21+, unavailable in v1.25+
+podsecuritypolicy.policy/psp.flannel.unprivileged created
+clusterrole.rbac.authorization.k8s.io/flannel created
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.apps/kube-flannel-ds created
+
+kubectl get pods --all-namespaces
+
+
+
+下载到本地
+https://github.com/flannel-io/flannel/releases/download/v0.15.1/flanneld-v0.15.1-amd64.docker
+
+
+docker load < flanneld-v0.15.1-amd64.docker
+
+root@master:~# docker images
+REPOSITORY                                       TAG             IMAGE ID       CREATED        SIZE
+k8s.gcr.io/kube-apiserver                        v1.22.4         8a5cc299272d   2 weeks ago    128MB
+k8s.gcr.io/kube-scheduler                        v1.22.4         721ba97f54a6   2 weeks ago    52.7MB
+k8s.gcr.io/kube-controller-manager               v1.22.4         0ce02f92d3e4   2 weeks ago    122MB
+k8s.gcr.io/kube-proxy                            v1.22.4         edeff87e4802   2 weeks ago    104MB
+quay.io/coreos/flannel                           v0.15.1         e6ea68648f0c   2 weeks ago    69.5MB
+quay.io/coreos/flannel                           v0.15.1-amd64   e6ea68648f0c   2 weeks ago    69.5MB
+rancher/mirrored-flannelcni-flannel-cni-plugin   v1.0.0          cd5235cd7dc2   4 weeks ago    9.03MB
+k8s.gcr.io/etcd                                  3.5.0-0         004811815584   5 months ago   295MB
+k8s.gcr.io/coredns/coredns                       v1.8.4          8d147537fb7d   6 months ago   47.6MB
+k8s.gcr.io/pause                                 3.5             ed210e3e4a5b   8 months ago   683kB
+root@master:~# kubectl get pods --all-namespaces
+NAMESPACE     NAME                             READY   STATUS    RESTARTS      AGE
+kube-system   coredns-78fcd69978-hqq4v         1/1     Running   0             97m
+kube-system   coredns-78fcd69978-qm6qq         1/1     Running   0             97m
+kube-system   etcd-master                      1/1     Running   0             98m
+kube-system   kube-apiserver-master            1/1     Running   0             98m
+kube-system   kube-controller-manager-master   1/1     Running   0             98m
+kube-system   kube-flannel-ds-kkqf4            1/1     Running   0             26m
+kube-system   kube-proxy-h5p5z                 1/1     Running   0             97m
+kube-system   kube-scheduler-master            1/1     Running   1 (86m ago)   98m
+
+root@master:~# kubectl get nodes
+NAME     STATUS   ROLES                  AGE    VERSION
+master   Ready    control-plane,master   102m   v1.22.4
 
 
 ```
+
+## flannel
+```go
+https://github.com/flannel-io/flannel
+
+
+chrome下载到本地：
+https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+vim kube-flannel.yml
+
+kubectl apply -f kube-flannel.yml
+```
+
+
+
+
+
+## node1 Kubernetes Dashboard
+```go
+kubectl apply -f recommended.yaml
+
+vim recommended.yaml
+chrome下载到本地：
+https://raw.githubusercontent.com/kubernetes/dashboard/v2.4.0/aio/deploy/recommended.yaml
+
+```
+
+## ## node1 加入集群
+```go
+
+kubeadm join 192.168.105.5:6443 --token 8dtoxq.mc8y47svyn1qbs3o \
+	--discovery-token-ca-cert-hash sha256:276f67ebefc068beeb31005935889d6874a36cc26c12fd3663d6d2aea1c15e0d
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+```
+
+
+
+
+
+## 错误❌解决：
+
+```go
+
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[kubelet-check] Initial timeout of 40s passed.
+[kubelet-check] It seems like the kubelet isn't running or healthy.
+[kubelet-check] The HTTP call equal to 'curl -sSL http://localhost:10248/healthz' failed with error: Get "http://localhost:10248/healthz": dial tcp [::1]:10248: connect: connection refused.
+
+
+	Unfortunately, an error has occurred:
+		timed out waiting for the condition
+
+	This error is likely caused by:
+		- The kubelet is not running
+		- The kubelet is unhealthy due to a misconfiguration of the node in some way (required cgroups disabled)
+
+	If you are on a systemd-powered system, you can try to troubleshoot the error with the following commands:
+		- 'systemctl status kubelet'
+		- 'journalctl -xeu kubelet'
+
+	Additionally, a control plane component may have crashed or exited when started by the container runtime.
+	To troubleshoot, list all containers using your preferred container runtimes CLI.
+
+
+
+Failed to run kubelet" err="failed to run Kubelet: misconfiguration: kubelet cgroup driver: \"systemd\" is different from docker cgroup driver: \"cgroupfs\""
+
+
+sudo vim /etc/docker/daemon.json
+
+{
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+
+systemctl restart docker
+systemctl status docker
+
+
+sudo kubeadm reset
+
+sudo rm -rf /etc/kubernetes/manifests/kube-apiserver.yaml
+sudo rm -rf /etc/kubernetes/manifests/kube-controller-manager.yaml
+sudo rm -rf /etc/kubernetes/manifests/kube-scheduler.yaml
+sudo rm -rf /etc/kubernetes/manifests/etcd.yaml
+sudo rm -rf /var/lib/etcd
+
+sudo rm -rf $HOME/.kube/config
+
+sudo kubeadm init --kubernetes-version=v1.22.4 --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.105.5
+
+
+
+```
+
+
+
 
 
 
